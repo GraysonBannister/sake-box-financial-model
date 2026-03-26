@@ -66,7 +66,7 @@ header .subtitle {
 /* KPI Cards */
 .kpi-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
   margin-bottom: 2rem;
 }
@@ -309,6 +309,11 @@ tfoot td:first-child { text-align: left; }
 }
 .insight-card strong { color: var(--text-primary); }
 
+.kpi-card.kpi-positive::before { background: var(--accent-teal); }
+.kpi-card.kpi-negative::before { background: var(--accent-rose); }
+.kpi-value.positive { color: var(--accent-teal); }
+.kpi-value.negative { color: var(--accent-rose); }
+
 @media (max-width: 960px) {
   .main-grid { grid-template-columns: 1fr; }
   .params-panel {
@@ -325,7 +330,7 @@ tfoot td:first-child { text-align: left; }
   .chart-row { grid-template-columns: 1fr; }
 }
 @media (max-width: 540px) {
-  .kpi-row { grid-template-columns: 1fr; }
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
   header { flex-direction: column; gap: 0.3rem; }
   .param-group { max-width: none; }
 }
@@ -336,7 +341,7 @@ tfoot td:first-child { text-align: left; }
 
   <header>
     <h1>酒 Sake Box</h1>
-    <span class="subtitle">Year 1 Fulfillment Cost Model &mdash; Scenario Planner</span>
+    <span class="subtitle">Year 1 Financial Model &mdash; Scenario Planner</span>
   </header>
 
   <div class="kpi-row">
@@ -358,12 +363,36 @@ tfoot td:first-child { text-align: left; }
       <div class="kpi-value" id="kpi-end-subs">—</div>
       <div class="kpi-note" id="kpi-end-note"></div>
     </div>
+    <div class="kpi-card" id="kpi-revenue-card">
+      <div class="kpi-label">Y1 Total Revenue</div>
+      <div class="kpi-value" id="kpi-revenue">—</div>
+      <div class="kpi-note" id="kpi-revenue-note"></div>
+    </div>
+    <div class="kpi-card" id="kpi-profit-card">
+      <div class="kpi-label">Y1 Gross Profit</div>
+      <div class="kpi-value" id="kpi-profit">—</div>
+      <div class="kpi-note" id="kpi-profit-note"></div>
+    </div>
   </div>
 
   <div class="main-grid">
 
     <aside class="params-panel">
       <div class="params-title">Scenario Parameters</div>
+
+      <div class="param-group">
+        <div class="param-group-label">Pricing & Revenue</div>
+        <div class="param-row">
+          <label for="p-subscriptionPrice">Avg subscription price</label>
+          <span class="param-prefix">$</span>
+          <input type="number" id="p-subscriptionPrice" value="89" min="0" step="1">
+        </div>
+        <div class="param-row">
+          <label for="p-landedCostPerBottle">Landed sake cost / bottle</label>
+          <span class="param-prefix">$</span>
+          <input type="number" id="p-landedCostPerBottle" value="15" min="0" step="0.50">
+        </div>
+      </div>
 
       <div class="param-group">
         <div class="param-group-label">Growth</div>
@@ -476,6 +505,13 @@ tfoot td:first-child { text-align: left; }
         </div>
       </div>
 
+      <div class="chart-card">
+        <h3>Revenue vs Cost & Profit Trend</h3>
+        <div class="chart-wrapper bar-wrapper">
+          <canvas id="profitChart"></canvas>
+        </div>
+      </div>
+
       <div class="table-card">
         <h3>Monthly Projection Table</h3>
         <table>
@@ -490,8 +526,12 @@ tfoot td:first-child { text-align: left; }
               <th>Kitting</th>
               <th>Shipping + Pkg</th>
               <th>Fixed</th>
-              <th>Total</th>
+              <th>Fulfillment</th>
               <th>Cost / Box</th>
+              <th>Revenue</th>
+              <th>Sake COGS</th>
+              <th>Gross Profit</th>
+              <th>Margin %</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -514,6 +554,8 @@ const fmt2 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD'
 const fmtN = new Intl.NumberFormat('en-US');
 
 const DEFAULTS = {
+  subscriptionPrice: 89,
+  landedCostPerBottle: 15,
   startSubs: 100,
   monthlyGrowth: 50,
   bottlesPerBox: 3,
@@ -559,7 +601,13 @@ function computeModel(p) {
     const total = storageCost + inboundCargo + kitting + shippingPkg + fixed;
     const costPerBox = boxes > 0 ? total / boxes : 0;
 
-    months.push({ month: m, subs, boxes, bottles, storageCost, inboundCargo, kitting, shippingPkg, fixed, total, costPerBox });
+    const revenue = subs * p.subscriptionPrice;
+    const sakeCost = subs * p.bottlesPerBox * p.landedCostPerBottle;
+    const cogs = sakeCost + total;
+    const grossProfit = revenue - cogs;
+    const grossMargin = revenue > 0 ? grossProfit / revenue : 0;
+
+    months.push({ month: m, subs, boxes, bottles, storageCost, inboundCargo, kitting, shippingPkg, fixed, total, costPerBox, revenue, sakeCost, cogs, grossProfit, grossMargin });
   }
 
   return months;
@@ -573,7 +621,7 @@ const chartColors = {
   fixed: 'rgba(212, 104, 122, 0.85)',
 };
 
-let barChart, lineChart, donutChart;
+let barChart, lineChart, donutChart, profitChart;
 
 function initCharts() {
   Chart.defaults.color = '#9a9aad';
@@ -662,6 +710,33 @@ function initCharts() {
       animation: { duration: 400 }
     }
   });
+
+  const profitCtx = document.getElementById('profitChart').getContext('2d');
+  profitChart = new Chart(profitCtx, {
+    type: 'line',
+    data: { labels: [], datasets: [] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 16, font: { size: 11 } } },
+        tooltip: {
+          backgroundColor: '#181c27',
+          borderColor: '#2a3045',
+          borderWidth: 1,
+          callbacks: { label: ctx => `${ctx.dataset.label}: ${fmt.format(ctx.parsed.y)}` }
+        }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: {
+          ticks: { callback: v => '$' + (Math.abs(v) >= 1000 ? (v / 1000).toFixed(0) + 'k' : v) },
+          grid: { color: 'rgba(42, 48, 69, 0.4)' }
+        }
+      },
+      animation: { duration: 400 }
+    }
+  });
 }
 
 function updateCharts(data) {
@@ -707,6 +782,45 @@ function updateCharts(data) {
     borderWidth: 2,
   }];
   donutChart.update();
+
+  profitChart.data.labels = labels;
+  profitChart.data.datasets = [
+    {
+      label: 'Revenue',
+      data: data.map(d => d.revenue),
+      borderColor: '#c9a84c',
+      backgroundColor: 'rgba(201, 168, 76, 0.08)',
+      borderWidth: 2.5,
+      pointBackgroundColor: '#c9a84c',
+      pointRadius: 3,
+      pointHoverRadius: 5,
+      tension: 0.3,
+    },
+    {
+      label: 'Total COGS',
+      data: data.map(d => d.cogs),
+      borderColor: '#d4687a',
+      backgroundColor: 'rgba(212, 104, 122, 0.08)',
+      borderWidth: 2.5,
+      pointBackgroundColor: '#d4687a',
+      pointRadius: 3,
+      pointHoverRadius: 5,
+      tension: 0.3,
+    },
+    {
+      label: 'Gross Profit',
+      data: data.map(d => d.grossProfit),
+      borderColor: '#4cc9b0',
+      backgroundColor: 'rgba(76, 201, 176, 0.1)',
+      borderWidth: 2.5,
+      pointBackgroundColor: '#4cc9b0',
+      pointRadius: 3,
+      pointHoverRadius: 5,
+      fill: true,
+      tension: 0.3,
+    },
+  ];
+  profitChart.update();
 }
 
 function updateTable(data) {
@@ -726,12 +840,21 @@ function updateTable(data) {
       <td>${fmt.format(d.fixed)}</td>
       <td>${fmt.format(d.total)}</td>
       <td>${fmt2.format(d.costPerBox)}</td>
+      <td>${fmt.format(d.revenue)}</td>
+      <td>${fmt.format(d.sakeCost)}</td>
+      <td style="color:${d.grossProfit >= 0 ? 'var(--accent-teal)' : 'var(--accent-rose)'}">${fmt.format(d.grossProfit)}</td>
+      <td style="color:${d.grossMargin >= 0 ? 'var(--accent-teal)' : 'var(--accent-rose)'}">${(d.grossMargin * 100).toFixed(1)}%</td>
     </tr>
   `).join('');
 
   const y1Total = data.reduce((s, d) => s + d.total, 0);
   const y1Boxes = data.reduce((s, d) => s + d.boxes, 0);
   const y1Bottles = data.reduce((s, d) => s + d.bottles, 0);
+
+  const y1Revenue = data.reduce((s, d) => s + d.revenue, 0);
+  const y1SakeCost = data.reduce((s, d) => s + d.sakeCost, 0);
+  const y1Profit = data.reduce((s, d) => s + d.grossProfit, 0);
+  const y1Margin = y1Revenue > 0 ? y1Profit / y1Revenue : 0;
 
   tfoot.innerHTML = `
     <tr>
@@ -746,6 +869,10 @@ function updateTable(data) {
       <td>${fmt.format(data.reduce((s, d) => s + d.fixed, 0))}</td>
       <td>${fmt.format(y1Total)}</td>
       <td>${fmt2.format(y1Boxes > 0 ? y1Total / y1Boxes : 0)}</td>
+      <td>${fmt.format(y1Revenue)}</td>
+      <td>${fmt.format(y1SakeCost)}</td>
+      <td style="color:${y1Profit >= 0 ? 'var(--accent-teal)' : 'var(--accent-rose)'}">${fmt.format(y1Profit)}</td>
+      <td style="color:${y1Margin >= 0 ? 'var(--accent-teal)' : 'var(--accent-rose)'}">${(y1Margin * 100).toFixed(1)}%</td>
     </tr>
   `;
 }
@@ -762,21 +889,49 @@ function updateKPIs(data) {
   document.getElementById('kpi-total-boxes').textContent = fmtN.format(y1Boxes);
   document.getElementById('kpi-end-subs').textContent = fmtN.format(lastMonth.subs);
   document.getElementById('kpi-end-note').textContent = `${fmtN.format(lastMonth.bottles)} bottles in M12`;
+
+  const y1Revenue = data.reduce((s, d) => s + d.revenue, 0);
+  const y1Profit = data.reduce((s, d) => s + d.grossProfit, 0);
+  const y1Margin = y1Revenue > 0 ? y1Profit / y1Revenue : 0;
+  const profitable = y1Profit >= 0;
+
+  document.getElementById('kpi-revenue').textContent = fmt.format(y1Revenue);
+  document.getElementById('kpi-revenue-note').textContent = `M12 revenue: ${fmt.format(lastMonth.revenue)}`;
+
+  const profitEl = document.getElementById('kpi-profit');
+  profitEl.textContent = fmt.format(y1Profit);
+  profitEl.className = 'kpi-value ' + (profitable ? 'positive' : 'negative');
+  document.getElementById('kpi-profit-note').textContent = `Gross margin: ${(y1Margin * 100).toFixed(1)}%`;
+
+  const profitCard = document.getElementById('kpi-profit-card');
+  profitCard.className = 'kpi-card ' + (profitable ? 'kpi-positive' : 'kpi-negative');
 }
 
 function updateInsight(data, p) {
   const y1Total = data.reduce((s, d) => s + d.total, 0);
   const y1Boxes = data.reduce((s, d) => s + d.boxes, 0);
-  const avgCost = y1Boxes > 0 ? y1Total / y1Boxes : 0;
-  const landedCostPerBottle = 15;
-  const landedCostPerBox = landedCostPerBottle * p.bottlesPerBox;
-  const totalCogs = landedCostPerBox + avgCost;
-  const suggestedPrice = Math.ceil(totalCogs * 1.05);
+  const avgFulfillment = y1Boxes > 0 ? y1Total / y1Boxes : 0;
+  const sakeCostPerBox = p.landedCostPerBottle * p.bottlesPerBox;
+  const avgCogsPerBox = sakeCostPerBox + avgFulfillment;
+  const m1Cogs = sakeCostPerBox + data[0].costPerBox;
+  const m12Cogs = sakeCostPerBox + data[11].costPerBox;
+  const price = p.subscriptionPrice;
+  const y1Margin = y1Boxes > 0 ? ((data.reduce((s, d) => s + d.grossProfit, 0)) / data.reduce((s, d) => s + d.revenue, 0) * 100) : 0;
+  const profitable = price > avgCogsPerBox;
 
-  document.getElementById('insightText').innerHTML =
-    `If landed sake cost is ~<strong>$${landedCostPerBottle}/bottle</strong> ($${fmtN.format(landedCostPerBox)}/box) + <strong>${fmt2.format(avgCost)}</strong> avg fulfillment = ~<strong>${fmt2.format(totalCogs)}</strong> total COGS/box. ` +
-    `You need <strong>$${suggestedPrice}+</strong> subscription pricing for positive contribution before marketing/CAC. ` +
-    `At Month 12 cost/box of <strong>${fmt2.format(data[11].costPerBox)}</strong>, breakeven drops to ~<strong>${fmt2.format(landedCostPerBox + data[11].costPerBox)}</strong>.`;
+  let html = `At <strong>${fmt2.format(price)}</strong> subscription price vs <strong>${fmt2.format(avgCogsPerBox)}</strong> avg COGS/box ` +
+    `(${fmt2.format(sakeCostPerBox)} sake + ${fmt2.format(avgFulfillment)} fulfillment), `;
+
+  if (profitable) {
+    html += `you earn <strong>${fmt2.format(price - avgCogsPerBox)}</strong> gross profit per box — a <strong>${y1Margin.toFixed(1)}%</strong> Y1 gross margin. `;
+  } else {
+    html += `you <strong>lose ${fmt2.format(avgCogsPerBox - price)}</strong> per box. Breakeven price is <strong>${fmt2.format(avgCogsPerBox)}</strong>. `;
+  }
+
+  html += `COGS/box improves from <strong>${fmt2.format(m1Cogs)}</strong> in M1 to <strong>${fmt2.format(m12Cogs)}</strong> by M12, ` +
+    `boosting per-box margin from <strong>${fmt2.format(price - m1Cogs)}</strong> to <strong>${fmt2.format(price - m12Cogs)}</strong> as fulfillment scales.`;
+
+  document.getElementById('insightText').innerHTML = html;
 }
 
 function recalculate() {
