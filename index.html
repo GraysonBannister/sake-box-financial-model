@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sake Box — Fulfillment Financial Model</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg-deep: #0f1118;
+  --bg-card: #181c27;
+  --bg-input: #232839;
+  --border: #2a3045;
+  --text-primary: #e8e4df;
+  --text-secondary: #9a9aad;
+  --text-muted: #5d5f72;
+  --gold: #c9a84c;
+  --gold-dim: #a0832e;
+  --gold-glow: rgba(201, 168, 76, 0.12);
+  --accent-teal: #4cc9b0;
+  --accent-rose: #d4687a;
+  --accent-blue: #5b8fd9;
+  --accent-purple: #9b7ed8;
+  --accent-orange: #d9955b;
+  --radius: 10px;
+  --font-display: 'Noto Serif JP', serif;
+  --font-body: 'DM Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 15px; scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+.container { max-width: 1360px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+header {
+  display: flex;
+  align-items: baseline;
+  gap: 1.2rem;
+  margin-bottom: 2.4rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1.4rem;
+}
+header h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.75rem;
+  color: var(--gold);
+  letter-spacing: 0.02em;
+}
+header .subtitle {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  position: relative;
+  top: -1px;
+}
+
+/* KPI Cards */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+.kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.4rem;
+  position: relative;
+  overflow: hidden;
+}
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--gold);
+}
+.kpi-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+.kpi-value {
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.kpi-note {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 0.3rem;
+}
+
+/* Main layout */
+.main-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* Parameter Panel */
+.params-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.4rem;
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+.params-panel::-webkit-scrollbar { width: 5px; }
+.params-panel::-webkit-scrollbar-track { background: transparent; }
+.params-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.params-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--gold);
+  margin-bottom: 1.2rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.param-group {
+  margin-bottom: 1.4rem;
+}
+.param-group-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 0.7rem;
+}
+.param-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.55rem;
+}
+.param-row label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  flex: 1;
+  margin-right: 0.5rem;
+}
+.param-row input[type="number"] {
+  width: 90px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  padding: 0.35rem 0.5rem;
+  text-align: right;
+  transition: border-color 0.2s;
+}
+.param-row input[type="number"]:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px var(--gold-glow);
+}
+.param-row input[type="number"]::-webkit-inner-spin-button { opacity: 0.4; }
+.param-prefix {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-right: 0.2rem;
+}
+
+.reset-btn {
+  display: block;
+  width: 100%;
+  margin-top: 0.8rem;
+  padding: 0.55rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.reset-btn:hover {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+  background: var(--gold-glow);
+}
+
+/* Charts area */
+.charts-area { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+.chart-card h3 {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+.chart-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+.chart-wrapper { position: relative; width: 100%; }
+.chart-wrapper.bar-wrapper { height: 340px; }
+.chart-wrapper.line-wrapper { height: 280px; }
+.chart-wrapper.donut-wrapper { height: 280px; max-width: 320px; margin: 0 auto; }
+
+/* Data Table */
+.table-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  overflow-x: auto;
+}
+.table-card h3 {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+thead th {
+  text-align: right;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 2px solid var(--border);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+thead th:first-child { text-align: left; }
+tbody td {
+  text-align: right;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+tbody td:first-child {
+  text-align: left;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: rgba(201, 168, 76, 0.04); }
+tfoot td {
+  text-align: right;
+  padding: 0.7rem 0.75rem;
+  border-top: 2px solid var(--border);
+  color: var(--gold);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+tfoot td:first-child { text-align: left; }
+
+/* Breakeven insight */
+.insight-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--radius);
+  padding: 1.2rem 1.5rem;
+}
+.insight-card h3 {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--gold);
+  margin-bottom: 0.5rem;
+}
+.insight-card p {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+.insight-card strong { color: var(--text-primary); }
+
+@media (max-width: 960px) {
+  .main-grid { grid-template-columns: 1fr; }
+  .params-panel {
+    position: static;
+    max-height: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 2rem;
+  }
+  .params-title { width: 100%; flex-shrink: 0; }
+  .param-group { flex: 1 1 220px; max-width: 340px; }
+  .reset-btn { flex-basis: 100%; max-width: 260px; }
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .chart-row { grid-template-columns: 1fr; }
+}
+@media (max-width: 540px) {
+  .kpi-row { grid-template-columns: 1fr; }
+  header { flex-direction: column; gap: 0.3rem; }
+  .param-group { max-width: none; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>酒 Sake Box</h1>
+    <span class="subtitle">Year 1 Fulfillment Cost Model &mdash; Scenario Planner</span>
+  </header>
+
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label">Total Y1 Fulfillment Spend</div>
+      <div class="kpi-value" id="kpi-total-spend">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Average Cost per Box</div>
+      <div class="kpi-value" id="kpi-avg-cost">—</div>
+      <div class="kpi-note" id="kpi-avg-note"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total Boxes Shipped (Y1)</div>
+      <div class="kpi-value" id="kpi-total-boxes">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Month 12 Subscribers</div>
+      <div class="kpi-value" id="kpi-end-subs">—</div>
+      <div class="kpi-note" id="kpi-end-note"></div>
+    </div>
+  </div>
+
+  <div class="main-grid">
+
+    <aside class="params-panel">
+      <div class="params-title">Scenario Parameters</div>
+
+      <div class="param-group">
+        <div class="param-group-label">Growth</div>
+        <div class="param-row">
+          <label for="p-startSubs">Starting subscribers</label>
+          <input type="number" id="p-startSubs" value="100" min="1" step="10">
+        </div>
+        <div class="param-row">
+          <label for="p-monthlyGrowth">Net new / month</label>
+          <input type="number" id="p-monthlyGrowth" value="50" min="0" step="5">
+        </div>
+        <div class="param-row">
+          <label for="p-bottlesPerBox">Bottles per box</label>
+          <input type="number" id="p-bottlesPerBox" value="3" min="1" max="12" step="1">
+        </div>
+      </div>
+
+      <div class="param-group">
+        <div class="param-group-label">Inbound Logistics (Japan &rarr; US)</div>
+        <div class="param-row">
+          <label for="p-cargoPerContainer">Cargo / container</label>
+          <span class="param-prefix">$</span>
+          <input type="number" id="p-cargoPerContainer" value="4500" min="0" step="100">
+        </div>
+        <div class="param-row">
+          <label for="p-containerCapacity">Container capacity (bottles)</label>
+          <input type="number" id="p-containerCapacity" value="6000" min="100" step="100">
+        </div>
+        <div class="param-row">
+          <label for="p-dutyPerBottle">Excise + duty / bottle</label>
+          <span class="param-prefix">$</span>
+          <input type="number" id="p-dutyPerBottle" value="0.75" min="0" step="0.05">
+        </div>
+      </div>
+
+      <div class="param-group">
+        <div class="param-group-label">Warehousing (Bonded 3PL)</div>
+        <div class="param-row">
+          <label for="p-storagePerPallet">Storage / pallet / mo</label>
+          <span class="param-prefix">$</span>
+          <input type="number" id="p-storagePerPallet" value="25" min="0" step="1">
+        </div>
+        <div class="param-row">
+          <label for="p-bottlesPerPallet">Bottles per pallet</label>
+          <input type="number" id="p-bottlesPerPallet" value="120" min="1" step="10">
+        </div>
+        <div class="param-row">
+          <label for="p-inventoryBuffer">Inventory buffer (months)</label>
+          <input type="number" id="p-inventoryBuffer" value="2.5" min="0.5" max="6" step="0.5">
+        </div>
+        <div class="param-row">
+          <label for="p-receivingPerBox">Receiving / box</label>
+          <span class="param-prefix">$</span>
+          <input type="number" id="p-receivingPerBox" value="0.50" min="0" step="0.10">
+        </div>
+      </div>
+
+      <div class="param-group">
+        <div class="param-group-label">Kitting & Outbound</div>
+        <div class="param-row">
+          <label for="p-pickPackPerBox">Pick & pack / box</label>
+          <span class="param-prefix">$</span>
+          <input type="number" id="p-pickPackPerBox" value="6" min="0" step="0.50">
+        </div>
+        <div class="param-row">
+          <label for="p-packagingPerBox">Packaging + inserts / box</label>
+          <span class="param-prefix">$</span>
+          <input type="number" id="p-packagingPerBox" value="12" min="0" step="0.50">
+        </div>
+        <div class="param-row">
+          <label for="p-shippingPerBox">Domestic shipping / box</label>
+          <span class="param-prefix">$</span>
+          <input type="number" id="p-shippingPerBox" value="35" min="0" step="1">
+        </div>
+      </div>
+
+      <div class="param-group">
+        <div class="param-group-label">Fixed Costs</div>
+        <div class="param-row">
+          <label for="p-fixedMonthly">Monthly fixed</label>
+          <span class="param-prefix">$</span>
+          <input type="number" id="p-fixedMonthly" value="500" min="0" step="50">
+        </div>
+      </div>
+
+      <button class="reset-btn" id="resetBtn">Reset to Defaults</button>
+    </aside>
+
+    <div class="charts-area">
+
+      <div class="chart-card">
+        <h3>Monthly Fulfillment Cost Breakdown</h3>
+        <div class="chart-wrapper bar-wrapper">
+          <canvas id="barChart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>Cost per Box Trend</h3>
+          <div class="chart-wrapper line-wrapper">
+            <canvas id="lineChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <h3>Y1 Cost Category Split</h3>
+          <div class="chart-wrapper donut-wrapper">
+            <canvas id="donutChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <h3>Monthly Projection Table</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Subscribers</th>
+              <th>Boxes</th>
+              <th>Bottles</th>
+              <th>Storage</th>
+              <th>Inbound Cargo</th>
+              <th>Kitting</th>
+              <th>Shipping + Pkg</th>
+              <th>Fixed</th>
+              <th>Total</th>
+              <th>Cost / Box</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+          <tfoot id="tableFoot"></tfoot>
+        </table>
+      </div>
+
+      <div class="insight-card">
+        <h3>Breakeven Insight</h3>
+        <p id="insightText"></p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+const fmt2 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtN = new Intl.NumberFormat('en-US');
+
+const DEFAULTS = {
+  startSubs: 100,
+  monthlyGrowth: 50,
+  bottlesPerBox: 3,
+  cargoPerContainer: 4500,
+  containerCapacity: 6000,
+  dutyPerBottle: 0.75,
+  storagePerPallet: 25,
+  bottlesPerPallet: 120,
+  inventoryBuffer: 2.5,
+  receivingPerBox: 0.50,
+  pickPackPerBox: 6,
+  packagingPerBox: 12,
+  shippingPerBox: 35,
+  fixedMonthly: 500,
+};
+
+function getParams() {
+  const p = {};
+  for (const key of Object.keys(DEFAULTS)) {
+    p[key] = parseFloat(document.getElementById('p-' + key).value) || 0;
+  }
+  return p;
+}
+
+function computeModel(p) {
+  const months = [];
+  const cargoPerBottle = p.containerCapacity > 0 ? p.cargoPerContainer / p.containerCapacity : 0;
+
+  for (let m = 1; m <= 12; m++) {
+    const subs = p.startSubs + (m - 1) * p.monthlyGrowth;
+    const boxes = subs;
+    const bottles = boxes * p.bottlesPerBox;
+
+    const inventoryBottles = bottles * p.inventoryBuffer;
+    const pallets = p.bottlesPerPallet > 0 ? Math.ceil(inventoryBottles / p.bottlesPerPallet) : 0;
+    const storageCost = pallets * p.storagePerPallet;
+
+    const inboundCargo = bottles * (cargoPerBottle + p.dutyPerBottle);
+    const kitting = boxes * (p.pickPackPerBox + p.receivingPerBox);
+    const shippingPkg = boxes * (p.shippingPerBox + p.packagingPerBox);
+    const fixed = p.fixedMonthly;
+
+    const total = storageCost + inboundCargo + kitting + shippingPkg + fixed;
+    const costPerBox = boxes > 0 ? total / boxes : 0;
+
+    months.push({ month: m, subs, boxes, bottles, storageCost, inboundCargo, kitting, shippingPkg, fixed, total, costPerBox });
+  }
+
+  return months;
+}
+
+const chartColors = {
+  storage: 'rgba(76, 201, 176, 0.85)',
+  inbound: 'rgba(91, 143, 217, 0.85)',
+  kitting: 'rgba(155, 126, 216, 0.85)',
+  shipping: 'rgba(217, 149, 91, 0.85)',
+  fixed: 'rgba(212, 104, 122, 0.85)',
+};
+
+let barChart, lineChart, donutChart;
+
+function initCharts() {
+  Chart.defaults.color = '#9a9aad';
+  Chart.defaults.borderColor = 'rgba(42, 48, 69, 0.6)';
+  Chart.defaults.font.family = "'DM Sans', sans-serif";
+  Chart.defaults.font.size = 11;
+
+  const barCtx = document.getElementById('barChart').getContext('2d');
+  barChart = new Chart(barCtx, {
+    type: 'bar',
+    data: { labels: [], datasets: [] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 16, font: { size: 11 } } },
+        tooltip: {
+          backgroundColor: '#181c27',
+          borderColor: '#2a3045',
+          borderWidth: 1,
+          titleFont: { weight: '600' },
+          callbacks: { label: ctx => `${ctx.dataset.label}: ${fmt.format(ctx.parsed.y)}` }
+        }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false } },
+        y: {
+          stacked: true,
+          ticks: { callback: v => '$' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v) },
+          grid: { color: 'rgba(42, 48, 69, 0.4)' }
+        }
+      },
+      animation: { duration: 400 }
+    }
+  });
+
+  const lineCtx = document.getElementById('lineChart').getContext('2d');
+  lineChart = new Chart(lineCtx, {
+    type: 'line',
+    data: { labels: [], datasets: [] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#181c27',
+          borderColor: '#2a3045',
+          borderWidth: 1,
+          callbacks: { label: ctx => `Cost/Box: ${fmt2.format(ctx.parsed.y)}` }
+        }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: {
+          ticks: { callback: v => '$' + v.toFixed(0) },
+          grid: { color: 'rgba(42, 48, 69, 0.4)' }
+        }
+      },
+      animation: { duration: 400 }
+    }
+  });
+
+  const donutCtx = document.getElementById('donutChart').getContext('2d');
+  donutChart = new Chart(donutCtx, {
+    type: 'doughnut',
+    data: { labels: [], datasets: [] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14, font: { size: 11 } } },
+        tooltip: {
+          backgroundColor: '#181c27',
+          borderColor: '#2a3045',
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => {
+              const pct = ctx.parsed > 0 ? ((ctx.parsed / ctx.dataset.data.reduce((a, b) => a + b, 0)) * 100).toFixed(1) : 0;
+              return `${ctx.label}: ${fmt.format(ctx.parsed)} (${pct}%)`;
+            }
+          }
+        }
+      },
+      animation: { duration: 400 }
+    }
+  });
+}
+
+function updateCharts(data) {
+  const labels = data.map(d => 'M' + d.month);
+
+  barChart.data.labels = labels;
+  barChart.data.datasets = [
+    { label: 'Storage', data: data.map(d => d.storageCost), backgroundColor: chartColors.storage },
+    { label: 'Inbound Cargo + Duties', data: data.map(d => d.inboundCargo), backgroundColor: chartColors.inbound },
+    { label: 'Kitting', data: data.map(d => d.kitting), backgroundColor: chartColors.kitting },
+    { label: 'Shipping + Packaging', data: data.map(d => d.shippingPkg), backgroundColor: chartColors.shipping },
+    { label: 'Fixed', data: data.map(d => d.fixed), backgroundColor: chartColors.fixed },
+  ];
+  barChart.update();
+
+  lineChart.data.labels = labels;
+  lineChart.data.datasets = [{
+    label: 'Cost per Box',
+    data: data.map(d => d.costPerBox),
+    borderColor: '#c9a84c',
+    backgroundColor: 'rgba(201, 168, 76, 0.1)',
+    borderWidth: 2.5,
+    pointBackgroundColor: '#c9a84c',
+    pointRadius: 4,
+    pointHoverRadius: 6,
+    fill: true,
+    tension: 0.3,
+  }];
+  lineChart.update();
+
+  const totals = {
+    storage: data.reduce((s, d) => s + d.storageCost, 0),
+    inbound: data.reduce((s, d) => s + d.inboundCargo, 0),
+    kitting: data.reduce((s, d) => s + d.kitting, 0),
+    shipping: data.reduce((s, d) => s + d.shippingPkg, 0),
+    fixed: data.reduce((s, d) => s + d.fixed, 0),
+  };
+  donutChart.data.labels = ['Storage', 'Inbound Cargo + Duties', 'Kitting', 'Shipping + Packaging', 'Fixed'];
+  donutChart.data.datasets = [{
+    data: [totals.storage, totals.inbound, totals.kitting, totals.shipping, totals.fixed],
+    backgroundColor: [chartColors.storage, chartColors.inbound, chartColors.kitting, chartColors.shipping, chartColors.fixed],
+    borderColor: '#181c27',
+    borderWidth: 2,
+  }];
+  donutChart.update();
+}
+
+function updateTable(data) {
+  const tbody = document.getElementById('tableBody');
+  const tfoot = document.getElementById('tableFoot');
+
+  tbody.innerHTML = data.map(d => `
+    <tr>
+      <td>${d.month}</td>
+      <td>${fmtN.format(d.subs)}</td>
+      <td>${fmtN.format(d.boxes)}</td>
+      <td>${fmtN.format(d.bottles)}</td>
+      <td>${fmt.format(d.storageCost)}</td>
+      <td>${fmt.format(d.inboundCargo)}</td>
+      <td>${fmt.format(d.kitting)}</td>
+      <td>${fmt.format(d.shippingPkg)}</td>
+      <td>${fmt.format(d.fixed)}</td>
+      <td>${fmt.format(d.total)}</td>
+      <td>${fmt2.format(d.costPerBox)}</td>
+    </tr>
+  `).join('');
+
+  const y1Total = data.reduce((s, d) => s + d.total, 0);
+  const y1Boxes = data.reduce((s, d) => s + d.boxes, 0);
+  const y1Bottles = data.reduce((s, d) => s + d.bottles, 0);
+
+  tfoot.innerHTML = `
+    <tr>
+      <td>Y1 Total</td>
+      <td></td>
+      <td>${fmtN.format(y1Boxes)}</td>
+      <td>${fmtN.format(y1Bottles)}</td>
+      <td>${fmt.format(data.reduce((s, d) => s + d.storageCost, 0))}</td>
+      <td>${fmt.format(data.reduce((s, d) => s + d.inboundCargo, 0))}</td>
+      <td>${fmt.format(data.reduce((s, d) => s + d.kitting, 0))}</td>
+      <td>${fmt.format(data.reduce((s, d) => s + d.shippingPkg, 0))}</td>
+      <td>${fmt.format(data.reduce((s, d) => s + d.fixed, 0))}</td>
+      <td>${fmt.format(y1Total)}</td>
+      <td>${fmt2.format(y1Boxes > 0 ? y1Total / y1Boxes : 0)}</td>
+    </tr>
+  `;
+}
+
+function updateKPIs(data) {
+  const y1Total = data.reduce((s, d) => s + d.total, 0);
+  const y1Boxes = data.reduce((s, d) => s + d.boxes, 0);
+  const avgCost = y1Boxes > 0 ? y1Total / y1Boxes : 0;
+  const lastMonth = data[data.length - 1];
+
+  document.getElementById('kpi-total-spend').textContent = fmt.format(y1Total);
+  document.getElementById('kpi-avg-cost').textContent = fmt2.format(avgCost);
+  document.getElementById('kpi-avg-note').textContent = `M12 cost/box: ${fmt2.format(lastMonth.costPerBox)}`;
+  document.getElementById('kpi-total-boxes').textContent = fmtN.format(y1Boxes);
+  document.getElementById('kpi-end-subs').textContent = fmtN.format(lastMonth.subs);
+  document.getElementById('kpi-end-note').textContent = `${fmtN.format(lastMonth.bottles)} bottles in M12`;
+}
+
+function updateInsight(data, p) {
+  const y1Total = data.reduce((s, d) => s + d.total, 0);
+  const y1Boxes = data.reduce((s, d) => s + d.boxes, 0);
+  const avgCost = y1Boxes > 0 ? y1Total / y1Boxes : 0;
+  const landedCostPerBottle = 15;
+  const landedCostPerBox = landedCostPerBottle * p.bottlesPerBox;
+  const totalCogs = landedCostPerBox + avgCost;
+  const suggestedPrice = Math.ceil(totalCogs * 1.05);
+
+  document.getElementById('insightText').innerHTML =
+    `If landed sake cost is ~<strong>$${landedCostPerBottle}/bottle</strong> ($${fmtN.format(landedCostPerBox)}/box) + <strong>${fmt2.format(avgCost)}</strong> avg fulfillment = ~<strong>${fmt2.format(totalCogs)}</strong> total COGS/box. ` +
+    `You need <strong>$${suggestedPrice}+</strong> subscription pricing for positive contribution before marketing/CAC. ` +
+    `At Month 12 cost/box of <strong>${fmt2.format(data[11].costPerBox)}</strong>, breakeven drops to ~<strong>${fmt2.format(landedCostPerBox + data[11].costPerBox)}</strong>.`;
+}
+
+function recalculate() {
+  const p = getParams();
+  const data = computeModel(p);
+  updateKPIs(data);
+  updateCharts(data);
+  updateTable(data);
+  updateInsight(data, p);
+}
+
+function resetDefaults() {
+  for (const [key, val] of Object.entries(DEFAULTS)) {
+    document.getElementById('p-' + key).value = val;
+  }
+  recalculate();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initCharts();
+  recalculate();
+
+  for (const key of Object.keys(DEFAULTS)) {
+    document.getElementById('p-' + key).addEventListener('input', recalculate);
+  }
+
+  document.getElementById('resetBtn').addEventListener('click', resetDefaults);
+});
+</script>
+</body>
+</html>
