@@ -184,6 +184,135 @@ header .subtitle {
   margin-right: 0.2rem;
 }
 
+.tier-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.3rem;
+  padding: 0.3rem 0.6rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tier-toggle:hover { border-color: var(--gold-dim); color: var(--gold); }
+.tier-toggle.active { border-color: var(--gold-dim); color: var(--gold); background: var(--gold-glow); }
+.tier-toggle .arrow { font-size: 0.6rem; transition: transform 0.2s; }
+.tier-toggle.active .arrow { transform: rotate(180deg); }
+
+.simple-price { transition: opacity 0.2s; }
+.simple-price.hidden { display: none; }
+
+.tier-editor { display: none; margin-top: 0.6rem; }
+.tier-editor.visible { display: block; }
+
+.tier-row {
+  display: grid;
+  grid-template-columns: 1fr 68px 58px 22px;
+  gap: 0.3rem;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+.tier-row input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  padding: 0.3rem 0.4rem;
+  transition: border-color 0.2s;
+}
+.tier-row input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold-glow); }
+.tier-row input[type="number"] { text-align: right; }
+.tier-row input[type="number"]::-webkit-inner-spin-button { opacity: 0.4; }
+
+.tier-remove {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.15s;
+  padding: 0;
+}
+.tier-remove:hover { color: var(--accent-rose); border-color: var(--accent-rose); background: rgba(212, 104, 122, 0.1); }
+.tier-remove.hidden { visibility: hidden; }
+
+.tier-header {
+  display: grid;
+  grid-template-columns: 1fr 68px 58px 22px;
+  gap: 0.3rem;
+  margin-bottom: 0.3rem;
+}
+.tier-header span {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.tier-header span:nth-child(2),
+.tier-header span:nth-child(3) { text-align: right; }
+
+.tier-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+  padding: 0.25rem 0.55rem;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 5px;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tier-add:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+.tier-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.55rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+.tier-weighted {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+.tier-weighted strong {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+.tier-pct-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  letter-spacing: 0.03em;
+}
+.tier-pct-badge.valid { background: rgba(76, 201, 176, 0.12); color: var(--accent-teal); }
+.tier-pct-badge.invalid { background: rgba(212, 104, 122, 0.12); color: var(--accent-rose); }
+
 .reset-btn {
   display: block;
   width: 100%;
@@ -382,10 +511,28 @@ tfoot td:first-child { text-align: left; }
 
       <div class="param-group">
         <div class="param-group-label">Pricing & Revenue</div>
-        <div class="param-row">
+        <div class="param-row simple-price" id="simplePriceRow">
           <label for="p-subscriptionPrice">Avg subscription price</label>
           <span class="param-prefix">$</span>
           <input type="number" id="p-subscriptionPrice" value="89" min="0" step="1">
+        </div>
+        <button class="tier-toggle" id="tierToggle">
+          <span>Advanced Pricing</span>
+          <span class="arrow">&#9660;</span>
+        </button>
+        <div class="tier-editor" id="tierEditor">
+          <div class="tier-header">
+            <span>Tier name</span>
+            <span>Price</span>
+            <span>% Cust.</span>
+            <span></span>
+          </div>
+          <div id="tierRows"></div>
+          <button class="tier-add" id="tierAddBtn">+ Add tier</button>
+          <div class="tier-footer">
+            <span class="tier-weighted">Wtd avg: <strong id="tierWeightedAvg">$89.00</strong></span>
+            <span class="tier-pct-badge valid" id="tierPctBadge">100%</span>
+          </div>
         </div>
         <div class="param-row">
           <label for="p-landedCostPerBottle">Landed sake cost / bottle</label>
@@ -572,12 +719,112 @@ const DEFAULTS = {
   fixedMonthly: 500,
 };
 
+const TIER_DEFAULTS = [
+  { name: 'Essential', price: 69, pct: 30 },
+  { name: 'Premium', price: 89, pct: 50 },
+  { name: "Collector's", price: 129, pct: 20 },
+];
+
+let useTiers = false;
+
+function getTiers() {
+  const rows = document.querySelectorAll('#tierRows .tier-row');
+  return Array.from(rows).map(row => ({
+    name: row.querySelector('.tier-name').value.trim(),
+    price: parseFloat(row.querySelector('.tier-price').value) || 0,
+    pct: parseFloat(row.querySelector('.tier-pct').value) || 0,
+  }));
+}
+
+function weightedAvgPrice(tiers) {
+  const totalPct = tiers.reduce((s, t) => s + t.pct, 0);
+  if (totalPct === 0) return 0;
+  return tiers.reduce((s, t) => s + t.price * (t.pct / 100), 0);
+}
+
 function getParams() {
   const p = {};
   for (const key of Object.keys(DEFAULTS)) {
     p[key] = parseFloat(document.getElementById('p-' + key).value) || 0;
   }
+  if (useTiers) {
+    p.tiers = getTiers();
+    p.subscriptionPrice = weightedAvgPrice(p.tiers);
+  }
   return p;
+}
+
+function createTierRow(tier) {
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  const div = document.createElement('div');
+  div.className = 'tier-row';
+  div.innerHTML =
+    `<input type="text" class="tier-name" value="${esc(tier.name)}" placeholder="Tier name">` +
+    `<input type="number" class="tier-price" value="${tier.price}" min="0" step="1" placeholder="$">` +
+    `<input type="number" class="tier-pct" value="${tier.pct}" min="0" max="100" step="1" placeholder="%">` +
+    `<button class="tier-remove" title="Remove tier">&times;</button>`;
+
+  div.querySelector('.tier-remove').addEventListener('click', () => {
+    div.remove();
+    updateTierUI();
+    recalculate();
+  });
+
+  div.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', () => { updateTierUI(); recalculate(); });
+  });
+
+  return div;
+}
+
+function renderTiers(tiers) {
+  const container = document.getElementById('tierRows');
+  container.innerHTML = '';
+  tiers.forEach(t => container.appendChild(createTierRow(t)));
+  updateTierUI();
+}
+
+function updateTierUI() {
+  const tiers = getTiers();
+  const totalPct = tiers.reduce((s, t) => s + t.pct, 0);
+  const avg = weightedAvgPrice(tiers);
+
+  document.getElementById('tierWeightedAvg').textContent = fmt2.format(avg);
+
+  const badge = document.getElementById('tierPctBadge');
+  badge.textContent = Math.round(totalPct) + '%';
+  badge.className = 'tier-pct-badge ' + (Math.abs(totalPct - 100) < 0.01 ? 'valid' : 'invalid');
+
+  const rows = document.querySelectorAll('#tierRows .tier-row');
+  rows.forEach(row => {
+    const btn = row.querySelector('.tier-remove');
+    btn.className = 'tier-remove' + (rows.length <= 1 ? ' hidden' : '');
+  });
+}
+
+function toggleTiers() {
+  useTiers = !useTiers;
+  const toggle = document.getElementById('tierToggle');
+  const editor = document.getElementById('tierEditor');
+  const simpleRow = document.getElementById('simplePriceRow');
+
+  toggle.classList.toggle('active', useTiers);
+  editor.classList.toggle('visible', useTiers);
+  simpleRow.classList.toggle('hidden', useTiers);
+
+  if (useTiers && document.querySelectorAll('#tierRows .tier-row').length === 0) {
+    renderTiers(TIER_DEFAULTS.map(t => ({ ...t })));
+  }
+
+  recalculate();
+}
+
+function addTierRow() {
+  const container = document.getElementById('tierRows');
+  container.appendChild(createTierRow({ name: '', price: 0, pct: 0 }));
+  updateTierUI();
+  const lastRow = container.lastElementChild;
+  lastRow.querySelector('.tier-name').focus();
 }
 
 function computeModel(p) {
@@ -947,6 +1194,13 @@ function resetDefaults() {
   for (const [key, val] of Object.entries(DEFAULTS)) {
     document.getElementById('p-' + key).value = val;
   }
+
+  useTiers = false;
+  document.getElementById('tierToggle').classList.remove('active');
+  document.getElementById('tierEditor').classList.remove('visible');
+  document.getElementById('simplePriceRow').classList.remove('hidden');
+  renderTiers(TIER_DEFAULTS.map(t => ({ ...t })));
+
   recalculate();
 }
 
@@ -958,6 +1212,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('p-' + key).addEventListener('input', recalculate);
   }
 
+  document.getElementById('tierToggle').addEventListener('click', toggleTiers);
+  document.getElementById('tierAddBtn').addEventListener('click', addTierRow);
   document.getElementById('resetBtn').addEventListener('click', resetDefaults);
 });
 </script>
