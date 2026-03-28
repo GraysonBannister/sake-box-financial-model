@@ -701,6 +701,7 @@ tfoot td:first-child { text-align: left; }
               <th>Sake COGS</th>
               <th>Gross Profit</th>
               <th>Margin %</th>
+              <th>Acq. Spend</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -891,8 +892,9 @@ function computeModel(p) {
     const cogs = sakeCost + total;
     const grossProfit = revenue - cogs;
     const grossMargin = revenue > 0 ? grossProfit / revenue : 0;
+    const cacSpend = p.monthlyGrowth * p.cacPerSub;
 
-    months.push({ month: m, subs, boxes, bottles, storageCost, inboundCargo, kitting, shippingPkg, fixed, total, costPerBox, revenue, sakeCost, cogs, grossProfit, grossMargin });
+    months.push({ month: m, subs, boxes, bottles, storageCost, inboundCargo, kitting, shippingPkg, fixed, total, costPerBox, revenue, sakeCost, cogs, grossProfit, grossMargin, cacSpend });
     prevSubs = subs;
   }
 
@@ -1130,6 +1132,7 @@ function updateTable(data) {
       <td>${fmt.format(d.sakeCost)}</td>
       <td style="color:${d.grossProfit >= 0 ? 'var(--accent-teal)' : 'var(--accent-rose)'}">${fmt.format(d.grossProfit)}</td>
       <td style="color:${d.grossMargin >= 0 ? 'var(--accent-teal)' : 'var(--accent-rose)'}">${(d.grossMargin * 100).toFixed(1)}%</td>
+      <td>${fmt.format(d.cacSpend)}</td>
     </tr>
   `).join('');
 
@@ -1159,6 +1162,7 @@ function updateTable(data) {
       <td>${fmt.format(y1SakeCost)}</td>
       <td style="color:${y1Profit >= 0 ? 'var(--accent-teal)' : 'var(--accent-rose)'}">${fmt.format(y1Profit)}</td>
       <td style="color:${y1Margin >= 0 ? 'var(--accent-teal)' : 'var(--accent-rose)'}">${(y1Margin * 100).toFixed(1)}%</td>
+      <td>${fmt.format(data.reduce((s, d) => s + d.cacSpend, 0))}</td>
     </tr>
   `;
 }
