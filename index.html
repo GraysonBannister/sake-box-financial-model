@@ -688,6 +688,7 @@ tfoot td:first-child { text-align: left; }
             <tr>
               <th>Month</th>
               <th>Subscribers</th>
+              <th>Acq. Spend</th>
               <th>Boxes</th>
               <th>Bottles</th>
               <th>Storage</th>
@@ -701,7 +702,6 @@ tfoot td:first-child { text-align: left; }
               <th>Sake COGS</th>
               <th>Gross Profit</th>
               <th>Margin %</th>
-              <th>Acq. Spend</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -1119,6 +1119,7 @@ function updateTable(data) {
     <tr>
       <td>${d.month}</td>
       <td>${fmtN.format(d.subs)}</td>
+      <td>${fmt.format(d.cacSpend)}</td>
       <td>${fmtN.format(d.boxes)}</td>
       <td>${fmtN.format(d.bottles)}</td>
       <td>${fmt.format(d.storageCost)}</td>
@@ -1132,7 +1133,6 @@ function updateTable(data) {
       <td>${fmt.format(d.sakeCost)}</td>
       <td style="color:${d.grossProfit >= 0 ? 'var(--accent-teal)' : 'var(--accent-rose)'}">${fmt.format(d.grossProfit)}</td>
       <td style="color:${d.grossMargin >= 0 ? 'var(--accent-teal)' : 'var(--accent-rose)'}">${(d.grossMargin * 100).toFixed(1)}%</td>
-      <td>${fmt.format(d.cacSpend)}</td>
     </tr>
   `).join('');
 
@@ -1149,20 +1149,20 @@ function updateTable(data) {
     <tr>
       <td>Y1 Total</td>
       <td></td>
+      <td style="color:var(--accent-rose)">${fmt.format(data.reduce((s, d) => s + d.cacSpend, 0))}</td>
       <td>${fmtN.format(y1Boxes)}</td>
       <td>${fmtN.format(y1Bottles)}</td>
-      <td>${fmt.format(data.reduce((s, d) => s + d.storageCost, 0))}</td>
-      <td>${fmt.format(data.reduce((s, d) => s + d.inboundCargo, 0))}</td>
-      <td>${fmt.format(data.reduce((s, d) => s + d.kitting, 0))}</td>
-      <td>${fmt.format(data.reduce((s, d) => s + d.shippingPkg, 0))}</td>
-      <td>${fmt.format(data.reduce((s, d) => s + d.fixed, 0))}</td>
-      <td>${fmt.format(y1Total)}</td>
-      <td>${fmt2.format(y1Boxes > 0 ? y1Total / y1Boxes : 0)}</td>
+      <td style="color:var(--accent-rose)">${fmt.format(data.reduce((s, d) => s + d.storageCost, 0))}</td>
+      <td style="color:var(--accent-rose)">${fmt.format(data.reduce((s, d) => s + d.inboundCargo, 0))}</td>
+      <td style="color:var(--accent-rose)">${fmt.format(data.reduce((s, d) => s + d.kitting, 0))}</td>
+      <td style="color:var(--accent-rose)">${fmt.format(data.reduce((s, d) => s + d.shippingPkg, 0))}</td>
+      <td style="color:var(--accent-rose)">${fmt.format(data.reduce((s, d) => s + d.fixed, 0))}</td>
+      <td style="color:var(--accent-rose)">${fmt.format(y1Total)}</td>
+      <td style="color:var(--accent-rose)">${fmt2.format(y1Boxes > 0 ? y1Total / y1Boxes : 0)}</td>
       <td>${fmt.format(y1Revenue)}</td>
-      <td>${fmt.format(y1SakeCost)}</td>
+      <td style="color:var(--accent-rose)">${fmt.format(y1SakeCost)}</td>
       <td style="color:${y1Profit >= 0 ? 'var(--accent-teal)' : 'var(--accent-rose)'}">${fmt.format(y1Profit)}</td>
       <td style="color:${y1Margin >= 0 ? 'var(--accent-teal)' : 'var(--accent-rose)'}">${(y1Margin * 100).toFixed(1)}%</td>
-      <td>${fmt.format(data.reduce((s, d) => s + d.cacSpend, 0))}</td>
     </tr>
   `;
 }
