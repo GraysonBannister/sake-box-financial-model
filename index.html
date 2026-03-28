@@ -503,6 +503,16 @@ tfoot td:first-child { text-align: left; }
       <div class="kpi-value" id="kpi-profit">—</div>
       <div class="kpi-note" id="kpi-profit-note"></div>
     </div>
+    <div class="kpi-card" id="kpi-churn-card">
+      <div class="kpi-label">Avg Monthly Churn</div>
+      <div class="kpi-value" id="kpi-churn">—</div>
+      <div class="kpi-note" id="kpi-churn-note"></div>
+    </div>
+    <div class="kpi-card" id="kpi-cac-card">
+      <div class="kpi-label">Cust. Acquisition Cost</div>
+      <div class="kpi-value" id="kpi-cac">—</div>
+      <div class="kpi-note" id="kpi-cac-note"></div>
+    </div>
   </div>
 
   <div class="main-grid">
@@ -552,6 +562,16 @@ tfoot td:first-child { text-align: left; }
         <div class="param-row">
           <label for="p-monthlyGrowth">Net new / month</label>
           <input type="number" id="p-monthlyGrowth" value="50" min="0" step="5">
+        </div>
+        <div class="param-row">
+          <label for="p-monthlyChurnPct">Monthly churn rate</label>
+          <span class="param-prefix">%</span>
+          <input type="number" id="p-monthlyChurnPct" value="5" min="0" max="100" step="0.5">
+        </div>
+        <div class="param-row">
+          <label for="p-cacPerSub">Cust. acquisition cost</label>
+          <span class="param-prefix">$</span>
+          <input type="number" id="p-cacPerSub" value="50" min="0" step="5">
         </div>
         <div class="param-row simple-price" id="simpleBottlesRow">
           <label for="p-bottlesPerBox">Bottles per box</label>
@@ -707,6 +727,8 @@ const DEFAULTS = {
   landedCostPerBottle: 15,
   startSubs: 100,
   monthlyGrowth: 50,
+  monthlyChurnPct: 5,
+  cacPerSub: 50,
   bottlesPerBox: 3,
   cargoPerContainer: 4500,
   containerCapacity: 6000,
@@ -845,8 +867,10 @@ function computeModel(p) {
   const months = [];
   const cargoPerBottle = p.containerCapacity > 0 ? p.cargoPerContainer / p.containerCapacity : 0;
 
+  let prevSubs = p.startSubs;
   for (let m = 1; m <= 12; m++) {
-    const subs = p.startSubs + (m - 1) * p.monthlyGrowth;
+    const subs = m === 1 ? p.startSubs
+      : Math.max(0, prevSubs * (1 - p.monthlyChurnPct / 100) + p.monthlyGrowth);
     const boxes = subs;
     const bottles = boxes * p.bottlesPerBox;
 
@@ -869,6 +893,7 @@ function computeModel(p) {
     const grossMargin = revenue > 0 ? grossProfit / revenue : 0;
 
     months.push({ month: m, subs, boxes, bottles, storageCost, inboundCargo, kitting, shippingPkg, fixed, total, costPerBox, revenue, sakeCost, cogs, grossProfit, grossMargin });
+    prevSubs = subs;
   }
 
   return months;
@@ -1138,7 +1163,7 @@ function updateTable(data) {
   `;
 }
 
-function updateKPIs(data) {
+function updateKPIs(data, p) {
   const y1Total = data.reduce((s, d) => s + d.total, 0);
   const y1Boxes = data.reduce((s, d) => s + d.boxes, 0);
   const avgCost = y1Boxes > 0 ? y1Total / y1Boxes : 0;
@@ -1166,6 +1191,19 @@ function updateKPIs(data) {
 
   const profitCard = document.getElementById('kpi-profit-card');
   profitCard.className = 'kpi-card ' + (profitable ? 'kpi-positive' : 'kpi-negative');
+
+  const churnPct = p.monthlyChurnPct;
+  const ltv = churnPct > 0 ? p.subscriptionPrice / (churnPct / 100) : null;
+  document.getElementById('kpi-churn').textContent = churnPct.toFixed(1) + '%';
+  document.getElementById('kpi-churn-note').textContent =
+    ltv !== null ? `Implied LTV: ${fmt.format(ltv)}` : 'No churn modeled';
+
+  const cac = p.cacPerSub;
+  const ltvCacRatio = (ltv !== null && cac > 0) ? ltv / cac : null;
+  document.getElementById('kpi-cac').textContent = fmt2.format(cac);
+  document.getElementById('kpi-cac-note').textContent = ltvCacRatio !== null
+    ? `LTV:CAC ${ltvCacRatio.toFixed(1)}:1`
+    : (cac === 0 ? 'CAC not set' : 'Set churn rate for LTV:CAC');
 }
 
 function updateInsight(data, p) {
@@ -1198,7 +1236,7 @@ function updateInsight(data, p) {
 function recalculate() {
   const p = getParams();
   const data = computeModel(p);
-  updateKPIs(data);
+  updateKPIs(data, p);
   updateCharts(data);
   updateTable(data);
   updateInsight(data, p);
