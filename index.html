@@ -214,7 +214,7 @@ header .subtitle {
 
 .tier-row {
   display: grid;
-  grid-template-columns: 1fr 68px 58px 22px;
+  grid-template-columns: 1fr 62px 46px 50px 22px;
   gap: 0.3rem;
   align-items: center;
   margin-bottom: 0.4rem;
@@ -255,7 +255,7 @@ header .subtitle {
 
 .tier-header {
   display: grid;
-  grid-template-columns: 1fr 68px 58px 22px;
+  grid-template-columns: 1fr 62px 46px 50px 22px;
   gap: 0.3rem;
   margin-bottom: 0.3rem;
 }
@@ -267,7 +267,8 @@ header .subtitle {
   color: var(--text-muted);
 }
 .tier-header span:nth-child(2),
-.tier-header span:nth-child(3) { text-align: right; }
+.tier-header span:nth-child(3),
+.tier-header span:nth-child(4) { text-align: right; }
 
 .tier-add {
   display: inline-flex;
@@ -524,13 +525,14 @@ tfoot td:first-child { text-align: left; }
           <div class="tier-header">
             <span>Tier name</span>
             <span>Price</span>
+            <span>Btls</span>
             <span>% Cust.</span>
             <span></span>
           </div>
           <div id="tierRows"></div>
           <button class="tier-add" id="tierAddBtn">+ Add tier</button>
           <div class="tier-footer">
-            <span class="tier-weighted">Wtd avg: <strong id="tierWeightedAvg">$89.00</strong></span>
+            <span class="tier-weighted">Wtd avg: <strong id="tierWeightedAvg">$89.00</strong> &nbsp;&middot;&nbsp; Btls/box: <strong id="tierWeightedBottles">3.0</strong></span>
             <span class="tier-pct-badge valid" id="tierPctBadge">100%</span>
           </div>
         </div>
@@ -551,7 +553,7 @@ tfoot td:first-child { text-align: left; }
           <label for="p-monthlyGrowth">Net new / month</label>
           <input type="number" id="p-monthlyGrowth" value="50" min="0" step="5">
         </div>
-        <div class="param-row">
+        <div class="param-row simple-price" id="simpleBottlesRow">
           <label for="p-bottlesPerBox">Bottles per box</label>
           <input type="number" id="p-bottlesPerBox" value="3" min="1" max="12" step="1">
         </div>
@@ -720,9 +722,9 @@ const DEFAULTS = {
 };
 
 const TIER_DEFAULTS = [
-  { name: 'Essential', price: 69, pct: 30 },
-  { name: 'Premium', price: 89, pct: 50 },
-  { name: "Collector's", price: 129, pct: 20 },
+  { name: 'Essential',   price: 69,  pct: 30, bottles: 2 },
+  { name: 'Premium',     price: 89,  pct: 50, bottles: 3 },
+  { name: "Collector's", price: 129, pct: 20, bottles: 5 },
 ];
 
 let useTiers = false;
@@ -730,9 +732,10 @@ let useTiers = false;
 function getTiers() {
   const rows = document.querySelectorAll('#tierRows .tier-row');
   return Array.from(rows).map(row => ({
-    name: row.querySelector('.tier-name').value.trim(),
-    price: parseFloat(row.querySelector('.tier-price').value) || 0,
-    pct: parseFloat(row.querySelector('.tier-pct').value) || 0,
+    name:    row.querySelector('.tier-name').value.trim(),
+    price:   parseFloat(row.querySelector('.tier-price').value) || 0,
+    bottles: parseFloat(row.querySelector('.tier-bottles').value) || 0,
+    pct:     parseFloat(row.querySelector('.tier-pct').value) || 0,
   }));
 }
 
@@ -740,6 +743,12 @@ function weightedAvgPrice(tiers) {
   const totalPct = tiers.reduce((s, t) => s + t.pct, 0);
   if (totalPct === 0) return 0;
   return tiers.reduce((s, t) => s + t.price * (t.pct / 100), 0);
+}
+
+function weightedAvgBottles(tiers) {
+  const totalPct = tiers.reduce((s, t) => s + t.pct, 0);
+  if (totalPct === 0) return 0;
+  return tiers.reduce((s, t) => s + t.bottles * (t.pct / 100), 0);
 }
 
 function getParams() {
@@ -750,6 +759,7 @@ function getParams() {
   if (useTiers) {
     p.tiers = getTiers();
     p.subscriptionPrice = weightedAvgPrice(p.tiers);
+    p.bottlesPerBox = weightedAvgBottles(p.tiers);
   }
   return p;
 }
@@ -761,6 +771,7 @@ function createTierRow(tier) {
   div.innerHTML =
     `<input type="text" class="tier-name" value="${esc(tier.name)}" placeholder="Tier name">` +
     `<input type="number" class="tier-price" value="${tier.price}" min="0" step="1" placeholder="$">` +
+    `<input type="number" class="tier-bottles" value="${tier.bottles}" min="1" max="24" step="1" placeholder="#">` +
     `<input type="number" class="tier-pct" value="${tier.pct}" min="0" max="100" step="1" placeholder="%">` +
     `<button class="tier-remove" title="Remove tier">&times;</button>`;
 
@@ -788,8 +799,10 @@ function updateTierUI() {
   const tiers = getTiers();
   const totalPct = tiers.reduce((s, t) => s + t.pct, 0);
   const avg = weightedAvgPrice(tiers);
+  const avgBottles = weightedAvgBottles(tiers);
 
   document.getElementById('tierWeightedAvg').textContent = fmt2.format(avg);
+  document.getElementById('tierWeightedBottles').textContent = avgBottles.toFixed(1);
 
   const badge = document.getElementById('tierPctBadge');
   badge.textContent = Math.round(totalPct) + '%';
@@ -811,6 +824,7 @@ function toggleTiers() {
   toggle.classList.toggle('active', useTiers);
   editor.classList.toggle('visible', useTiers);
   simpleRow.classList.toggle('hidden', useTiers);
+  document.getElementById('simpleBottlesRow').classList.toggle('hidden', useTiers);
 
   if (useTiers && document.querySelectorAll('#tierRows .tier-row').length === 0) {
     renderTiers(TIER_DEFAULTS.map(t => ({ ...t })));
@@ -821,7 +835,7 @@ function toggleTiers() {
 
 function addTierRow() {
   const container = document.getElementById('tierRows');
-  container.appendChild(createTierRow({ name: '', price: 0, pct: 0 }));
+  container.appendChild(createTierRow({ name: '', price: 0, bottles: 0, pct: 0 }));
   updateTierUI();
   const lastRow = container.lastElementChild;
   lastRow.querySelector('.tier-name').focus();
@@ -1199,6 +1213,7 @@ function resetDefaults() {
   document.getElementById('tierToggle').classList.remove('active');
   document.getElementById('tierEditor').classList.remove('visible');
   document.getElementById('simplePriceRow').classList.remove('hidden');
+  document.getElementById('simpleBottlesRow').classList.remove('hidden');
   renderTiers(TIER_DEFAULTS.map(t => ({ ...t })));
 
   recalculate();
